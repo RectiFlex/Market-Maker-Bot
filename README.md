@@ -1,23 +1,93 @@
-# Uniswap V3 Market Maker Trading Bot
+# Uniswap V2 Market Maker Desktop App
 
-Blog Post:
-https://jamesbachini.com/uniswap-market-maker-bot/
+This project provides a desktop application for running a market maker bot on Uniswap V2 pools.
 
+![Desktop App Screenshot](https://example.com/screenshot.jpg)
 
-The Uniswap market maker trading bot works by automatically buying and selling tokens in a liquidity pool in order to maintain a target price. The bot is programmed to buy tokens when the price falls below the target price, and to sell tokens when the price rises above the target price. This helps to keep the price of the tokens in the pool stable and balances liquidity on either side of the pool.
+## Features
 
-The bot is programmed to use a fixed target price, but it can also be adapted to use a dynamic target price. A dynamic target price can be based on a linear price path or something like a simple moving average of past prices.
+- **Desktop UI**: User-friendly interface for monitoring and controlling the market maker bot
+- **Uniswap V2 Compatible**: Works with Uniswap V2 Router for maximum liquidity pool compatibility
+- **TWAP Strategy**: Time-Weighted Average Price execution to minimize market impact
+- **Real-time Monitoring**: Watch your balances, prices, and trade history in real-time
+- **Customizable Settings**: Configure token pairs, trade sizes, frequency, and more
 
-The bot can be used to trade any pair of tokens that are listed on Uniswap v3 on any EVM compatible chain. The bot is setup as default to be run on the ETH/UNI pool on Goerli testnet, which allows users to test the bot without using real funds.
+## TWAP Strategy
 
-The following are the steps on how to set up the Uniswap market maker trading bot:
+The Time-Weighted Average Price (TWAP) strategy breaks large orders into smaller chunks and executes them over time. This helps to:
 
-- Fork the repository from GitHub.
-- Install the necessary libraries with the Node package manager (npm).
-- Create a .env file and add your private key and Alchemy API key.
-- Edit the mm.js file to specify the tokens that you want to trade and the target price.
-- Run `node mm.js`
+- Reduce market impact by spreading trades
+- Get a more representative average price 
+- Avoid price manipulation and slippage on large orders
+- Protect against price volatility
 
-The bot will start trading and will automatically buy and sell tokens in order to maintain the target price.
+When TWAP is enabled, the bot will:
+1. Split your order into the specified number of intervals
+2. Execute trades evenly across the configured time period
+3. Dynamically adjust to market conditions between executions
 
-Note the code is for demonstration purposes only and is not battle tested in a production environment.
+## Installation
+
+```
+# Clone the repository
+git clone https://github.com/yourusername/Market-Maker-Bot.git
+cd Market-Maker-Bot
+
+# Install dependencies
+npm install
+
+# Configure your environment
+cp .env-sample .env
+# Edit .env with your API key and private key
+
+# Start the desktop app
+npm start
+```
+
+## Running in Development Mode
+
+```
+# Start the app with dev tools
+NODE_ENV=development npm start
+```
+
+## How To Use
+
+1. **Configure Settings**:
+   - Set the network (Goerli testnet or Mainnet)
+   - Enter token address
+   - Set buy amount, target price, and slippage tolerance
+   - Configure check frequency
+   - Enable TWAP if desired and set intervals
+
+2. **Start Trading**:
+   - Click the "Start Bot" button on the dashboard
+   - Monitor trades, balances, and price charts
+   - Stop the bot at any time
+
+3. **View History**:
+   - See all trades in the Trades tab
+   - View system logs in the Logs tab
+
+## Building for Production
+
+```
+# Build the app for your platform
+npm run build
+```
+
+This will create executable files in the `dist` directory.
+
+## Security Notes
+
+- Store your private key securely and never share it
+- Test with small amounts first, especially on mainnet
+- The app stores your settings locally in an encrypted format
+
+## License
+
+This project is open source software licensed under the MIT license.
+
+## Disclaimer
+
+This code is for demonstration purposes only and is not battle-tested in a production environment. Use at your own risk.

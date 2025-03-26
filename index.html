@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Uniswap V2 Market Maker</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+  <style>
+    body {
+      background-color: #f8f9fa;
+      color: #212529;
+    }
+    .sidebar {
+      background-color: #212529;
+      color: #fff;
+      min-height: 100vh;
+    }
+    .nav-link {
+      color: #adb5bd;
+    }
+    .nav-link.active {
+      color: #fff;
+      background-color: #343a40;
+    }
+    .card {
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+    .status-badge {
+      font-size: 0.8rem;
+      padding: 0.25rem 0.5rem;
+    }
+    .dark-mode {
+      background-color: #222;
+      color: #eee;
+    }
+    .dark-mode .card {
+      background-color: #333;
+      color: #eee;
+    }
+    .dark-mode .form-control, 
+    .dark-mode .form-select {
+      background-color: #444;
+      color: #eee;
+      border-color: #555;
+    }
+    .dark-mode .input-group-text {
+      background-color: #555;
+      color: #eee;
+      border-color: #555;
+    }
+    .dark-mode hr {
+      border-color: #555;
+    }
+    #logContainer {
+      height: 300px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 0.875rem;
+      background-color: #f8f9fa;
+      border-radius: 5px;
+      padding: 10px;
+    }
+    .dark-mode #logContainer {
+      background-color: #2a2a2a;
+    }
+    .log-entry {
+      margin-bottom: 5px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 5px;
+    }
+    .dark-mode .log-entry {
+      border-bottom: 1px solid #444;
+    }
+    .trade-row {
+      transition: background-color 0.3s;
+    }
+    .trade-row:hover {
+      background-color: rgba(0,0,0,0.05);
+    }
+    .dark-mode .trade-row:hover {
+      background-color: rgba(255,255,255,0.05);
+    }
+    .chart-container {
+      height: 300px;
+      width: 100%;
+    }
+    .balance-card {
+      border-left: 5px solid;
+    }
+    .balance-card.eth {
+      border-left-color: #627eea;
+    }
+    .balance-card.token {
+      border-left-color: #ff9900;
+    }
+    .switch-container {
+      position: fixed;
+      right: 20px;
+      top: 20px;
+      z-index: 1000;
+      background-color: rgba(255, 255, 255, 0.9);
+      padding: 5px 10px;
+      border-radius: 5px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .dark-mode .switch-container {
+      background-color: rgba(40, 40, 40, 0.9);
+    }
+    .token-validation-spinner {
+      display: none;
+      width: 1rem;
+      height: 1rem;
+    }
+    .loading .token-validation-spinner {
+      display: inline-block;
+    }
+    #dexscreener-embed {
+      position: relative;
+      width: 100%;
+      padding-bottom: 125%;
+    }
+    @media(min-width:1400px) {
+      #dexscreener-embed {
+        padding-bottom: 65%;
+      }
+    }
+    @media(min-width:992px) and (max-width:1399px) {
+      #dexscreener-embed {
+        padding-bottom: 80%;
+      }
+    }
+    @media(min-width:768px) and (max-width:991px) {
+      #dexscreener-embed {
+        padding-bottom: 100%;
+      }
+    }
+    @media(max-width:767px) {
+      #dexscreener-embed {
+        padding-bottom: 150%;
+      }
+    }
+    #dexscreener-embed iframe {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      border: 0;
+    }
+    .wallet-info {
+      font-size: 0.85rem;
+      color: #6c757d;
+    }
+    .real-time-indicator {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: #198754;
+      margin-right: 5px;
+    }
+    .wallet-info-card {
+      background-color: rgba(0,0,0,0.03);
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+    .dark-mode .wallet-info-card {
+      background-color: rgba(255,255,255,0.05);
+    }
+    
+    /* Address overflow fix */
+    #wallet-address-full a {
+      word-break: break-all;
+      font-size: 0.9rem;
+    }
+    @media (max-width: 767px) {
+      .wallet-info-card .row > div {
+        margin-bottom: 10px;
+      }
+      
+      .status-cards .col-xl-3 {
+        margin-bottom: 15px;
+      }
+      
+      .col-md-9.col-lg-10 {
+        padding-top: 60px; /* Make room for the dark mode switch */
+      }
+      
+      h1.h2 {
+        font-size: 1.5rem;
+      }
+    }
+    .table-responsive {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Improve table on small screens */
+    @media (max-width: 767px) {
+      .table-responsive table {
+        min-width: 650px; /* Ensure tables have minimum width for scrolling */
+      }
+      
+      .table th, .table td {
+        white-space: nowrap;
+        padding: 0.5rem;
+      }
+    }
+
+    /* Form improvements */
+    .form-group:not(:last-child) {
+      margin-bottom: 1rem;
+    }
+    
+    .form-control, .form-select {
+      max-width: 100%;
+    }
+    
+    /* Make token status more responsive */
+    .token-status {
+      min-width: 60px;
+      text-align: center;
+    }
+
+    /* Enhance ONEX banner */
+    .onex-banner {
+      background: linear-gradient(90deg, #3a7bd5, #00d2ff);
+      color: white;
+      padding: 10px 15px;
+      text-align: center;
+      font-weight: bold;
+      width: 100%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      font-size: 1.2rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      border-radius: 0 0 8px 8px;
+    }
+    .onex-banner::before {
+      content: "⚡";
+      margin-right: 8px;
+      font-size: 1.3rem;
+    }
+    .dark-mode .onex-banner {
+      background: linear-gradient(90deg, #2c3e50, #4ca1af);
+    }
+    
+    /* Fix price card text overflow */
+    #current-price {
+      font-size: 1.8rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    @media (max-width: 1400px) {
+      #current-price {
+        font-size: 1.5rem;
+      }
+    }
+
+    /* Fix potential text overflow in all cards */
+    .card h3 {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    
+    /* Make the card text content areas wider */
+    .card .d-flex > div:first-child {
+      width: 75%;
+    }
+    
+    .card .d-flex > div.text-end {
+      width: 25%;
+    }
+
+    /* Further improve dark mode switch */
+    @media (max-width: 767px) {
+      .switch-container {
+        top: 10px;
+        right: 10px;
+      }
+      
+      /* Ensure main content doesn't overlap with fixed elements */
+      .tab-pane {
+        padding-top: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container-fluid">
+    <div class="row">
+      <!-- Sidebar -->
+      <div class="col-md-3 col-lg-2 d-md-block sidebar collapse p-0">
+        <div class="d-flex flex-column p-3 text-white h-100">
+          <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
+            <i class="bi bi-bar-chart-fill me-2"></i>
+            <span class="fs-4">Market Maker</span>
+          </a>
+          <hr>
+          <ul class="nav nav-pills flex-column mb-auto">
+            <li class="nav-item">
+              <a href="#" class="nav-link active" data-bs-toggle="tab" data-bs-target="#dashboard">
+                <i class="bi bi-speedometer2 me-2"></i>
+                Dashboard
+              </a>
+            </li>
+            <li>
+              <a href="#" class="nav-link" data-bs-toggle="tab" data-bs-target="#settings">
+                <i class="bi bi-gear me-2"></i>
+                Settings
+              </a>
+            </li>
+            <li>
+              <a href="#" class="nav-link" data-bs-toggle="tab" data-bs-target="#logs">
+                <i class="bi bi-journal-text me-2"></i>
+                Logs
+              </a>
+            </li>
+            <li>
+              <a href="#" class="nav-link" data-bs-toggle="tab" data-bs-target="#trades">
+                <i class="bi bi-list-ul me-2"></i>
+                Trades
+              </a>
+            </li>
+          </ul>
+          <hr>
+          <div class="d-flex align-items-center text-white text-decoration-none">
+            <i class="bi bi-person-circle me-2"></i>
+            <span class="fs-5" id="wallet-address">0x...</span>
+          </div>
+          <div class="mt-2">
+            <span class="real-time-indicator"></span> 
+            <small>Live connected to wallet</small>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Main content -->
+      <div class="col-md-9 col-lg-10 ms-sm-auto px-md-4 tab-content">
+        <div class="switch-container form-check form-switch">
+          <input class="form-check-input" type="checkbox" id="darkModeSwitch">
+          <label class="form-check-label" for="darkModeSwitch">Dark Mode</label>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div class="tab-pane fade show active" id="dashboard">
+          <!-- ONEX Banner -->
+          <div class="onex-banner">
+            Made by ONEX
+          </div>
+          
+          <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Dashboard</h1>
+            <div class="btn-toolbar mb-2 mb-md-0">
+              <div class="btn-group me-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="refreshBalanceBtn">
+                  <i class="bi bi-arrow-repeat"></i> Refresh
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-success" id="toggleBotBtn">
+                  <i class="bi bi-play-fill"></i> Buy Now / Start Bot
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Wallet Info Card -->
+          <div class="wallet-info-card mb-4">
+            <div class="row g-2">
+              <div class="col-md-3">
+                <div class="d-flex align-items-center">
+                  <div class="real-time-indicator"></div>
+                  <strong>Connected Wallet:</strong>
+                </div>
+                <div id="wallet-address-full" class="mt-1">0x...</div>
+              </div>
+              <div class="col-md-3">
+                <div>Network:</div>
+                <strong id="current-network">Goerli Testnet</strong>
+              </div>
+              <div class="col-md-3">
+                <div>Current Block:</div>
+                <strong id="current-block">Loading...</strong>
+              </div>
+              <div class="col-md-3">
+                <div>Last Update:</div>
+                <strong id="last-update">Just now</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Status Cards -->
+          <div class="row status-cards">
+            <div class="col-xl-3 col-md-6">
+              <div class="card balance-card eth">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between">
+                    <div>
+                      <h5 class="card-title">ETH Balance</h5>
+                      <h3 class="my-2" id="eth-balance">0.00</h3>
+                      <small id="eth-usd-value">≈ $0.00 USD</small>
+                    </div>
+                    <div class="text-end">
+                      <i class="bi bi-currency-ethereum fs-1 text-muted"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-xl-3 col-md-6">
+              <div class="card balance-card token">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between">
+                    <div>
+                      <h5 class="card-title">
+                        <span class="token-symbol">Token</span> Balance
+                      </h5>
+                      <h3 class="my-2" id="token-balance">0.00</h3>
+                      <small id="token-usd-value">≈ $0.00 USD</small>
+                    </div>
+                    <div class="text-end">
+                      <i class="bi bi-coin fs-1 text-muted"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-xl-3 col-md-6">
+              <div class="card">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between">
+                    <div>
+                      <h5 class="card-title">Current Price</h5>
+                      <h3 class="my-2" id="current-price">0.00</h3>
+                      <span id="price-change" class="badge bg-success">0.00%</span>
+                    </div>
+                    <div class="text-end">
+                      <i class="bi bi-graph-up fs-1 text-muted"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-xl-3 col-md-6">
+              <div class="card">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between">
+                    <div>
+                      <h5 class="card-title">Bot Status</h5>
+                      <h3 class="my-2" id="bot-status">Stopped</h3>
+                      <span id="bot-status-badge" class="badge bg-danger">Inactive</span>
+                    </div>
+                    <div class="text-end">
+                      <i class="bi bi-robot fs-1 text-muted"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chart -->
+          <div class="row mt-4">
+            <div class="col-12">
+              <div class="card">
+                <div class="card-body">
+                  <h5 class="card-title">
+                    <span class="token-symbol">Token</span> Market Data - DexScreener Integration
+                  </h5>
+                  <div id="dexscreener-container">
+                    <div id="dexscreener-embed">
+                      <iframe id="dexscreener-iframe" src="https://dexscreener.com/ethereum/0xF95df7A4766532A7273C6bB512F2C25429f19925?embed=1&loadChartSettings=0&chartTheme=dark&theme=dark&chartStyle=0&chartType=usd&interval=15"></iframe>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Trades -->
+          <div class="row mt-4">
+            <div class="col-12">
+              <div class="card">
+                <div class="card-body">
+                  <h5 class="card-title">Recent Trades</h5>
+                  <div class="table-responsive">
+                    <table class="table table-striped table-sm">
+                      <thead>
+                        <tr>
+                          <th>Type</th>
+                          <th>Amount</th>
+                          <th>Price</th>
+                          <th>Time</th>
+                          <th>Tx Hash</th>
+                        </tr>
+                      </thead>
+                      <tbody id="recent-trades">
+                        <!-- Recent trades will be populated here -->
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div class="tab-pane fade" id="settings">
+          <!-- ONEX Banner -->
+          <div class="onex-banner">
+            Made by ONEX
+          </div>
+          
+          <div class="pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Bot Settings</h1>
+          </div>
+          
+          <div class="row">
+            <div class="col-lg-8 col-md-10 mx-auto">
+              <div class="card">
+                <div class="card-body">
+                  <form id="settingsForm">
+                    <div class="mb-3">
+                      <label for="providerSelect" class="form-label">Network</label>
+                      <select class="form-select" id="providerSelect" name="provider">
+                        <option value="goerli">Goerli (Testnet)</option>
+                        <option value="mainnet">Mainnet</option>
+                      </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                      <label for="tokenAddress" class="form-label">Token Address</label>
+                      <div class="input-group">
+                        <input type="text" class="form-control" id="tokenAddress" name="tokenAddress" 
+                          placeholder="0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984">
+                        <span class="input-group-text token-status">
+                          <span class="spinner-border spinner-border-sm token-validation-spinner" role="status" aria-hidden="true"></span>
+                          <span class="token-symbol">UNI</span>
+                        </span>
+                      </div>
+                      <div class="form-text">Enter a valid ERC20 token address with a Uniswap V2 pair</div>
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="pairAddress" class="form-label">DexScreener Pair Address (optional)</label>
+                      <input type="text" class="form-control" id="pairAddress" name="pairAddress" 
+                        placeholder="0xF95df7A4766532A7273C6bB512F2C25429f19925">
+                      <div class="form-text">Enter the Uniswap V2 pair address for DexScreener chart</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                      <label for="buyAmount" class="form-label">Buy Amount (ETH)</label>
+                      <div class="input-group">
+                        <input type="text" class="form-control" id="buyAmount" name="buyAmount" 
+                          placeholder="0.001">
+                        <span class="input-group-text">ETH</span>
+                      </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                      <label for="targetPrice" class="form-label">Target Price (<span class="token-symbol">tokens</span> per ETH) - Optional</label>
+                      <input type="text" class="form-control" id="targetPrice" name="targetPrice" 
+                        placeholder="35">
+                      <div class="form-text">If set, the bot will sell tokens when price reaches this target. Leave empty to only buy tokens.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                      <label for="slippageTolerance" class="form-label">Slippage Tolerance (%)</label>
+                      <div class="input-group">
+                        <input type="text" class="form-control" id="slippageTolerance" name="slippageTolerance" 
+                          placeholder="0.5">
+                        <span class="input-group-text">%</span>
+                      </div>
+                      <div class="form-text">Enter as basis points (50 = 0.5%)</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                      <label for="tradeFrequency" class="form-label">Check Price Interval (seconds)</label>
+                      <div class="input-group">
+                        <input type="text" class="form-control" id="tradeFrequency" name="tradeFrequency" 
+                          placeholder="3600">
+                        <span class="input-group-text">sec</span>
+                      </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="mb-3">
+                      <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="twapEnabled" name="twapEnabled">
+                        <label class="form-check-label" for="twapEnabled">Enable TWAP Strategy</label>
+                      </div>
+                      <div class="form-text">Split trades into multiple smaller ones over time</div>
+                    </div>
+                    
+                    <div id="twapSettingsContainer" style="display:none;">
+                      <div class="mb-3">
+                        <label for="twapIntervals" class="form-label">Number of TWAP Intervals</label>
+                        <input type="number" class="form-control" id="twapIntervals" name="twapIntervals" 
+                          placeholder="4" min="2" max="24">
+                      </div>
+                      
+                      <div class="mb-3">
+                        <label for="twapSpread" class="form-label">TWAP Time Spread (seconds)</label>
+                        <div class="input-group">
+                          <input type="text" class="form-control" id="twapSpread" name="twapSpread" 
+                            placeholder="3600">
+                          <span class="input-group-text">sec</span>
+                        </div>
+                        <div class="form-text">Total time to spread all intervals</div>
+                      </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                      <button type="button" class="btn btn-primary" id="saveSettingsBtn">Save Settings</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Logs Tab -->
+        <div class="tab-pane fade" id="logs">
+          <!-- ONEX Banner -->
+          <div class="onex-banner">
+            Made by ONEX
+          </div>
+          
+          <div class="pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Bot Logs</h1>
+          </div>
+          <div class="card">
+            <div class="card-body">
+              <div id="logContainer"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Trades Tab -->
+        <div class="tab-pane fade" id="trades">
+          <!-- ONEX Banner -->
+          <div class="onex-banner">
+            Made by ONEX
+          </div>
+          
+          <div class="pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Trade History</h1>
+          </div>
+          <div class="card">
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-hover">
+                  <thead>
+                    <tr>
+                      <th>Type</th>
+                      <th>Date/Time</th>
+                      <th>ETH Amount</th>
+                      <th><span class="token-symbol">Token</span> Amount</th>
+                      <th>Price</th>
+                      <th>TWAP</th>
+                      <th>Transaction</th>
+                    </tr>
+                  </thead>
+                  <tbody id="trade-history">
+                    <!-- Trade history will be populated here -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="renderer.js"></script>
+</body>
+</html> 
